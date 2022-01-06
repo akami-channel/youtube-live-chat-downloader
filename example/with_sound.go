@@ -1,16 +1,20 @@
 package main
 
 import (
-	// YtChat "github.com/abhinavxd/youtube-live-chat-downloader/v1"
 	YtChat "github.com/akami-channel/youtube-live-chat-downloader/v2"
 	"fmt"
 	"log"
+	"os"
+	"time"
+
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
 )
 
 func main() {
-	fmt.Print("hi")
-	// continuation, cfg, error := YtChat.ParseInitialData("https://www.youtube.com/watch?v=5qap5aO4i9A")
 	continuation, cfg, error := YtChat.ParseInitialData("https://www.youtube.com/watch?v=ydYDqZQpim8")
+		play_sound()
 	if error != nil {
 		log.Fatal(error)
 	}
@@ -24,6 +28,29 @@ func main() {
 		for _, msg := range chat {
 			fmt.Print(msg.Timestamp, " | ")
 			fmt.Println(msg.AuthorName, ": ", msg.Message)
+			play_sound()
 		}
 	}
+}
+
+func play_sound() {
+	f, err := os.Open("test.mp3")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	streamer, format, err := mp3.Decode(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer streamer.Close()
+
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+
+	done := make(chan bool)
+	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+		done <- true
+	})))
+
+	<-done
 }
